@@ -1,76 +1,129 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="theme-color" content="#0a0a0f">
-<title>O Segredo da Floresta</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>O Segredo da Floresta</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-<div id="gameContainer">
+  <!-- ===== TELA DE MENU ===== -->
+  <div id="menu-screen" class="screen active">
+    <div class="stars" id="stars"></div>
+    <div class="menu-content">
+      <div class="title-wrapper">
+        <div class="pixel-tree left-tree">🌲</div>
+        <div class="title-block">
+          <div class="subtitle-top">✦ UMA AVENTURA PIXEL ✦</div>
+          <h1 class="game-title">O SEGREDO<br>DA FLORESTA</h1>
+          <div class="title-underline"></div>
+        </div>
+        <div class="pixel-tree right-tree">🌲</div>
+      </div>
 
-  <!-- ===== MENU PRINCIPAL ===== -->
-  <div id="menuScreen">
-    <div id="menuBg"></div>
-    <div id="menuContent">
-      <h1 id="gameTitle">
-        <span class="titleLine1">O SEGREDO</span>
-        <span class="titleLine2">DA FLORESTA</span>
-      </h1>
-      <div id="menuHood"></div>
-      <button id="playBtn" class="menuBtn">▶ JOGAR</button>
-      <button id="howToBtn" class="menuBtn">? COMO JOGAR</button>
-      <p id="menuFooter">Use ← → para mover · Z para pular · X para atirar fogo</p>
+      <div class="menu-character">
+        <canvas id="menu-char-canvas" width="48" height="48"></canvas>
+      </div>
+
+      <div class="menu-buttons">
+        <button class="btn-play pixel-btn" id="btn-play">
+          <span>► JOGAR</span>
+        </button>
+        <button class="btn-play pixel-btn secondary" id="btn-controls">
+          <span>❓ CONTROLES</span>
+        </button>
+      </div>
+
+      <div id="controls-panel" class="controls-panel hidden">
+        <div class="controls-grid">
+          <div class="ctrl-row"><kbd>←</kbd><kbd>→</kbd> Mover</div>
+          <div class="ctrl-row"><kbd>↑</kbd> / <kbd>ESPAÇO</kbd> Pular</div>
+          <div class="ctrl-row"><kbd>Z</kbd> / <kbd>X</kbd> Atirar</div>
+          <div class="ctrl-row mobile-note">📱 No celular: use os botões na tela</div>
+        </div>
+      </div>
+
+      <div class="menu-footer">
+        <span class="blink-text">© 2024 — PIXEL STUDIO</span>
+      </div>
     </div>
   </div>
 
-  <!-- ===== TELA "COMO JOGAR" ===== -->
-  <div id="howToScreen" class="hidden">
-    <div id="howToContent">
-      <h2>COMO JOGAR</h2>
-      <div class="howToRow"><span class="key">◄ ►</span><span>Mover Chapeuzinho</span></div>
-      <div class="howToRow"><span class="key">Z</span><span>Pular</span></div>
-      <div class="howToRow"><span class="key">X</span><span>Atirar bola de fogo</span></div>
-      <p class="howToText">Atravesse a floresta, derrote as criaturas e descubra quem é o monstro misterioso que te persegue!</p>
-      <button id="backBtn" class="menuBtn">VOLTAR</button>
+  <!-- ===== TELA DO JOGO ===== -->
+  <div id="game-screen" class="screen">
+    <div class="hud">
+      <div class="hud-left">
+        <span class="hud-label">❤️</span>
+        <span id="hud-lives">3</span>
+        <span class="hud-label" style="margin-left:12px">⭐</span>
+        <span id="hud-score">0</span>
+      </div>
+      <div class="hud-center">
+        <span id="hud-phase-name" class="phase-name">FASE 1 — A FLORESTA</span>
+      </div>
+      <div class="hud-right">
+        <span class="hud-label">🔥</span>
+        <span id="hud-ammo">∞</span>
+      </div>
+    </div>
+
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Controles mobile -->
+    <div class="mobile-controls">
+      <div class="mobile-left-group">
+        <button class="mobile-btn" id="btn-left" aria-label="Esquerda">◀</button>
+        <button class="mobile-btn" id="btn-right" aria-label="Direita">▶</button>
+      </div>
+      <div class="mobile-right-group">
+        <button class="mobile-btn" id="btn-jump" aria-label="Pular">▲</button>
+        <button class="mobile-btn fire-btn" id="btn-fire" aria-label="Atirar">🔥</button>
+      </div>
     </div>
   </div>
 
-  <!-- ===== HUD SUPERIOR ===== -->
-  <div id="title" class="hidden">★ O SEGREDO DA FLORESTA ★</div>
-
-  <!-- ===== CANVAS DO JOGO ===== -->
-  <canvas id="c" width="240" height="135" class="hidden"></canvas>
-
-  <div id="ui" class="hidden">
-    <span id="hp">♥♥♥</span>
-    <span id="stage">FLORESTA</span>
-    <span id="sc">PTS: 0</span>
-  </div>
-
-  <div id="msg"></div>
-
-  <!-- ===== CONTROLES MOBILE ===== -->
-  <div id="mobileControls" class="hidden">
-    <div id="dpad">
-      <button id="btnLeft" class="ctrlBtn" aria-label="Mover esquerda">◄</button>
-      <button id="btnRight" class="ctrlBtn" aria-label="Mover direita">►</button>
-    </div>
-    <div id="actionPad">
-      <button id="btnJump" class="ctrlBtn ctrlAction" aria-label="Pular">▲</button>
-      <button id="btnFire" class="ctrlBtn ctrlAction ctrlFire" aria-label="Atirar fogo">🔥</button>
+  <!-- ===== TELA DE GAME OVER ===== -->
+  <div id="gameover-screen" class="screen overlay-screen">
+    <div class="overlay-box">
+      <div class="overlay-pixel-deco">💀</div>
+      <h2 class="overlay-title red-text">FIM DE JOGO</h2>
+      <p class="overlay-msg">A floresta venceu desta vez...</p>
+      <p class="score-display">PONTOS: <span id="go-score">0</span></p>
+      <button class="pixel-btn" id="btn-restart">↺ TENTAR NOVAMENTE</button>
+      <button class="pixel-btn secondary" id="btn-menu-go">⌂ MENU</button>
     </div>
   </div>
 
-  <div id="controlsHint" class="hidden"><span>← → MOVER &nbsp; Z PULAR &nbsp; X FOGO</span></div>
+  <!-- ===== TELA DE REVELAÇÃO (BOSS FINAL) ===== -->
+  <div id="reveal-screen" class="screen overlay-screen">
+    <div class="overlay-box wide">
+      <div class="reveal-sequence" id="reveal-seq">
+        <div class="reveal-step" id="rv1">
+          <div class="big-emoji">😱</div>
+          <p class="reveal-text">A criatura se aproxima...<br>sua máscara cai...</p>
+        </div>
+        <div class="reveal-step hidden" id="rv2">
+          <div class="big-emoji">👵</div>
+          <p class="reveal-text red-text">ERA A VOVÓ<br>O TEMPO TODO!</p>
+        </div>
+        <div class="reveal-step hidden" id="rv3">
+          <p class="reveal-text small">Ela havia se perdido na floresta e<br>um feitiço maligno a transformou...</p>
+          <p class="reveal-text">Chapeuzinho quebrou o encanto<br>com suas bolas de fogo! 🔥</p>
+          <div class="big-emoji">❤️</div>
+        </div>
+        <div class="reveal-step hidden" id="rv4">
+          <h2 class="overlay-title gold-text">PARABÉNS!</h2>
+          <p class="reveal-text">Você salvou a vovó e<br>revelou o segredo da floresta!</p>
+          <p class="score-display">PONTUAÇÃO FINAL: <span id="final-score">0</span></p>
+          <button class="pixel-btn" id="btn-menu-win">⌂ MENU PRINCIPAL</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-</div>
-
-<script src="script.js"></script>
+  <script src="game.js"></script>
 </body>
 </html>
