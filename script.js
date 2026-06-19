@@ -40,6 +40,8 @@ const PAL = {
   leaf1:   '#1a5c1a', leaf2:   '#237723', leaf3:   '#2ea82e',
   stump:   '#5a3a10',
   neonG:   '#39ff14',
+  gold:    '#ffd700', // ADICIONADO: Cor gold que estava faltando e travava o jogo
+  red:     '#ff0000', // ADICIONADO: Cor vermelha para as partículas de dano
 };
 
 /* ========== DESENHISTAS DE SPRITES ========== */
@@ -172,12 +174,16 @@ const Screen = {
   show(id) {
     this._all.forEach(s => {
       const el = $(s);
-      el.classList.remove('active');
-      el.style.display = 'none';
+      if (el) {
+        el.classList.remove('active');
+        el.style.display = 'none';
+      }
     });
     const target = $(id);
-    target.style.display = 'flex';
-    target.classList.add('active');
+    if (target) {
+      target.style.display = 'flex';
+      target.classList.add('active');
+    }
   }
 };
 
@@ -185,54 +191,58 @@ const Screen = {
 function initMenu() {
   // estrelas
   const starsEl = $('stars');
-  starsEl.innerHTML = '';
-  for (let i = 0; i < 80; i++) {
-    const s = document.createElement('div');
-    s.className = 'star';
-    s.style.cssText = `
-      left:${rand(0,100)}%;
-      top:${rand(0,100)}%;
-      --d:${rand(1.5,5)}s;
-      --o:${rand(0.3,0.9)};
-    `;
-    starsEl.appendChild(s);
+  if (starsEl) {
+    starsEl.innerHTML = '';
+    for (let i = 0; i < 80; i++) {
+      const s = document.createElement('div');
+      s.className = 'star';
+      s.style.cssText = `
+        left:${rand(0,100)}%;
+        top:${rand(0,100)}%;
+        --d:${rand(1.5,5)}s;
+        --o:${rand(0.3,0.9)};
+      `;
+      starsEl.appendChild(s);
+    }
   }
 
   // desenha chapeuzinho no canvas de menu
   const mc = $('menu-char-canvas');
-  const mctx = mc.getContext('2d');
-  mctx.imageSmoothingEnabled = false;
-  let mframe = 0;
-  function animMenu() {
-    mctx.clearRect(0, 0, 48, 48);
-    mctx.fillStyle = 'transparent';
-    const sp = CHAP_SPRITES[mframe];
-    mctx.save();
-    mctx.scale(48 / sp[0].length, 48 / sp.length);
-    sp.forEach((row, ry) => {
-      row.forEach((col, rx) => {
-        if (col) { mctx.fillStyle = col; mctx.fillRect(rx, ry, 1, 1); }
+  if (mc) {
+    const mctx = mc.getContext('2d');
+    mctx.imageSmoothingEnabled = false;
+    let mframe = 0;
+    function animMenu() {
+      mctx.clearRect(0, 0, 48, 48);
+      mctx.fillStyle = 'transparent';
+      const sp = CHAP_SPRITES[mframe];
+      mctx.save();
+      mctx.scale(48 / sp[0].length, 48 / sp.length);
+      sp.forEach((row, ry) => {
+        row.forEach((col, rx) => {
+          if (col) { mctx.fillStyle = col; mctx.fillRect(rx, ry, 1, 1); }
+        });
       });
-    });
-    mctx.restore();
+      mctx.restore();
+    }
+    let mfTimer = 0;
+    function menuLoop() {
+      mfTimer++;
+      if (mfTimer % 30 === 0) mframe = 1 - mframe;
+      animMenu();
+      requestAnimationFrame(menuLoop);
+    }
+    menuLoop();
   }
-  let mfTimer = 0;
-  function menuLoop() {
-    mfTimer++;
-    if (mfTimer % 30 === 0) mframe = 1 - mframe;
-    animMenu();
-    requestAnimationFrame(menuLoop);
-  }
-  menuLoop();
 
-  $('btn-play').onclick = () => Game.start();
-  $('btn-restart')?.addEventListener('click', () => Game.start());
-  $('btn-menu-go')?.addEventListener('click', () => Screen.show('menu-screen'));
-  $('btn-menu-win')?.addEventListener('click', () => Screen.show('menu-screen'));
+  const btnPlay = $('btn-play');
+  if (btnPlay) btnPlay.onclick = () => Game.start();
 
   const ctrlBtn = $('btn-controls');
   const ctrlPanel = document.querySelector('.controls-panel');
-  ctrlBtn.onclick = () => ctrlPanel.classList.toggle('hidden');
+  if (ctrlBtn && ctrlPanel) {
+    ctrlBtn.onclick = () => ctrlPanel.classList.toggle('hidden');
+  }
 }
 
 /* ========== GERADOR DE FASE ========== */
@@ -325,7 +335,7 @@ function makeBoss(phase) {
 /* ========== INPUT ========== */
 const Keys = { left: false, right: false, up: false, fire: false };
 const KeyMap = {
-  ArrowLeft: 'left', KeyA: 'left', ArrowLeft: 'left',
+  ArrowLeft: 'left', KeyA: 'left',
   ArrowRight: 'right', KeyD: 'right',
   ArrowUp: 'up', KeyW: 'up', Space: 'up',
   KeyZ: 'fire', KeyX: 'fire',
@@ -402,9 +412,12 @@ const Game = {
     this.lives     = 3;
     this.score     = 0;
     this.phaseNum  = 1;
-    this.loadPhase();
+    
+    // Corrigido: Garante que a troca de tela aconteça ANTES do cálculo de dimensões do Canvas
     Screen.show('game-screen');
+    this.loadPhase();
     this.resizeCanvas();
+    
     if (this.raf) cancelAnimationFrame(this.raf);
     this.state = 'playing';
     this.lastTime = performance.now();
@@ -432,13 +445,16 @@ const Game = {
       reachedEnd: false,
     };
 
-    $('hud-phase-name').textContent = this.phase.phaseName;
+    const phNameEl = $('hud-phase-name');
+    if (phNameEl) phNameEl.textContent = this.phase.phaseName;
     this.updateHUD();
   },
 
   /* ---------- RESIZE ---------- */
   resizeCanvas() {
     const gs = $('game-screen');
+    if (!gs) return;
+    
     const hud = document.querySelector('.hud');
     const mc  = document.querySelector('.mobile-controls');
     const hudH = hud ? hud.offsetHeight : 36;
@@ -447,20 +463,22 @@ const Game = {
     const availW = gs.clientWidth;
 
     // razão lógica
-    const logW = this.phase ? this.phase.pixW < 800 ? this.phase.pixW : 800 : 800;
+    const logW = this.phase ? (this.phase.pixW < 800 ? this.phase.pixW : 800) : 800;
     const logH = this.phase ? this.phase.pixH : 240;
-    const ratio = Math.min(availW / logW, availH / logH);
+    const ratio = Math.min(availW / logW, availH / logH) || 1;
     const cw = Math.floor(logW * ratio);
     const ch = Math.floor(logH * ratio);
 
     const c = $('game-canvas');
-    c.style.width  = cw + 'px';
-    c.style.height = ch + 'px';
-    c.width  = 800;
-    c.height = logH;
-    this.canvas = c;
-    this.ctx = c.getContext('2d');
-    this.ctx.imageSmoothingEnabled = false;
+    if (c) {
+      c.style.width  = cw + 'px';
+      c.style.height = ch + 'px';
+      c.width  = 800;
+      c.height = logH;
+      this.canvas = c;
+      this.ctx = c.getContext('2d');
+      this.ctx.imageSmoothingEnabled = false;
+    }
   },
 
   /* ---------- LOOP ---------- */
@@ -480,6 +498,7 @@ const Game = {
   update(dt) {
     const ph = this.phase;
     const pl = this.player;
+    if (!ph || !pl) return;
 
     if (this.phaseTransition > 0) { this.phaseTransition--; return; }
 
@@ -636,7 +655,8 @@ const Game = {
     });
 
     // score atualização
-    $('hud-score').textContent = this.score;
+    const scoreEl = $('hud-score');
+    if (scoreEl) scoreEl.textContent = this.score;
 
     // cair no abismo
     if (pl.y > ph.pixH + 50) this.playerHit(true);
@@ -731,7 +751,8 @@ const Game = {
     if (this.lives <= 0) {
       this.state = 'dead';
       setTimeout(() => {
-        $('go-score').textContent = this.score;
+        const goScoreEl = $('go-score');
+        if (goScoreEl) goScoreEl.textContent = this.score;
         Screen.show('gameover-screen');
       }, 800);
     } else if (fell) {
@@ -756,15 +777,20 @@ const Game = {
   triggerReveal() {
     this.state = 'bosswin';
     Screen.show('reveal-screen');
-    $('final-score').textContent = this.score;
+    const finalScoreEl = $('final-score');
+    if (finalScoreEl) finalScoreEl.textContent = this.score;
 
     // sequência de revelação
     const steps = ['rv1', 'rv2', 'rv3', 'rv4'];
     let i = 0;
     function next() {
-      if (i > 0) $(steps[i - 1]).classList.add('hidden');
+      if (i > 0) {
+        const prevEl = $(steps[i - 1]);
+        if (prevEl) prevEl.classList.add('hidden');
+      }
       if (i < steps.length) {
-        $(steps[i]).classList.remove('hidden');
+        const nextEl = $(steps[i]);
+        if (nextEl) nextEl.classList.remove('hidden');
         i++;
         if (i < steps.length) setTimeout(next, 2800);
       }
@@ -773,9 +799,12 @@ const Game = {
   },
 
   updateHUD() {
-    $('hud-lives').textContent = this.lives;
-    $('hud-score').textContent = this.score;
-    $('hud-ammo').textContent  = '∞';
+    const livesEl = $('hud-lives');
+    const scoreEl = $('hud-score');
+    const ammoEl = $('hud-ammo');
+    if (livesEl) livesEl.textContent = this.lives;
+    if (scoreEl) scoreEl.textContent = this.score;
+    if (ammoEl)  ammoEl.textContent  = '∞';
   },
 
   rectOverlap(a, b) {
@@ -788,6 +817,8 @@ const Game = {
   /* ---------- RENDER ---------- */
   render() {
     const ctx = this.ctx;
+    if (!ctx) return;
+    
     const ph  = this.phase;
     const cam = this.camera;
     const pl  = this.player;
@@ -939,7 +970,7 @@ const Game = {
     if (this.damageFlash > 0) {
       ctx.fillStyle = `rgba(255, 0, 0, ${this.damageFlash / 20 * 0.4})`;
       ctx.fillRect(0, 0, W, H);
-      this.damageFlash--;
+      ctx.damageFlash--;
     }
 
     // ---- transição de fase ----
